@@ -93,24 +93,24 @@ type subscriptionRequest struct {
 //	})
 //
 // [EventSub subscription types]: https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/
-func (c *Client) AddSubscription(Type string, version string, condition Condition) error {
-	err := c.addSubscription(Type, version, condition)
+func (c *Client) AddSubscription(Type string, version string, condition Condition) (string, error) {
+	id, err := c.addSubscription(Type, version, condition)
 	if err != nil {
 		var uaErr *UnauthorizedError
 		if errors.As(err, &uaErr) {
 			c.logger.Println("Token invalid, generating a new one")
 			token, err := c.generateToken(c.clientID, c.clientSecret)
 			if err != nil {
-				return err
+				return "", err
 			}
 			c.token = token
 			return c.addSubscription(Type, version, condition)
 		}
 	}
-	return nil
+	return id, nil
 }
 
-func (c *Client) addSubscription(Type string, version string, condition Condition) error {
+func (c *Client) addSubscription(Type string, version string, condition Condition) (string, error) {
 	reqBody, err := json.Marshal(subscriptionRequest{
 		Type:      Type,
 		Version:   version,
@@ -122,12 +122,12 @@ func (c *Client) addSubscription(Type string, version string, condition Conditio
 		},
 	})
 	if err != nil {
-		return &InternalError{"Could not serialize request body to JSON", err}
+		return "", &InternalError{"Could not serialize request body to JSON", err}
 	}
 
 	request, err := http.NewRequest("POST", helixURL+"/eventsub/subscriptions", bytes.NewBuffer(reqBody))
 	if err != nil {
-		return &InternalError{"Could not create request", err}
+		return "", &InternalError{"Could not create request", err}
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -136,27 +136,27 @@ func (c *Client) addSubscription(Type string, version string, condition Conditio
 
 	res, err := c.httpClient.Do(request)
 	if err != nil {
-		return &InternalError{"Could not send request", err}
+		return "", &InternalError{"Could not send request", err}
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return &InternalError{"Could not read response body", err}
+		return "", &InternalError{"Could not read response body", err}
 	}
 
 	if res.StatusCode == 409 {
-		return &DuplicateSubscriptionError{
+		return "", &DuplicateSubscriptionError{
 			Condition: condition,
 			Type:      Type,
 		}
 	}
 
 	if res.StatusCode == 401 {
-		return &UnauthorizedError{}
+		return "", &UnauthorizedError{}
 	}
 	if res.StatusCode != 202 {
-		return &UnhandledStatusError{res.StatusCode, body}
+		return "", &UnhandledStatusError{res.StatusCode, body}
 	}
 
 	var responseBody struct {
@@ -165,12 +165,12 @@ func (c *Client) addSubscription(Type string, version string, condition Conditio
 
 	err = json.Unmarshal(body, &responseBody)
 	if err != nil {
-		return &InternalError{"Could not parse response body", err}
+		return "", &InternalError{"Could not parse response body", err}
 	}
 
 	// Returned body is an array that contains a single subscription
 	if len(responseBody.Data) < 1 {
-		return &InternalError{"Helix did not return the subscription they were supposed to", nil}
+		return "", &InternalError{"Helix did not return the subscription they were supposed to", nil}
 	}
 	subscription := responseBody.Data[0]
 
@@ -180,7 +180,7 @@ func (c *Client) addSubscription(Type string, version string, condition Conditio
 		case id := <-c.verifiedSubscriptions:
 			if id == subscription.ID {
 				c.logger.Printf("Subscription created: %s", subscription.ID)
-				return nil
+				return id, nil
 			} else {
 				// Verified subscription was not for this subscription
 				c.logger.Println("Subscription confirmation did not match ID, ignoring...")
@@ -188,7 +188,7 @@ func (c *Client) addSubscription(Type string, version string, condition Conditio
 				continue
 			}
 		case <-time.After(10 * time.Second):
-			return &VerificationTimeoutError{subscription}
+			return "", &VerificationTimeoutError{subscription}
 		}
 	}
 }

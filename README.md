@@ -64,7 +64,7 @@ func main() {
 
 	// Add a subscription for LinneB going live
 	// Note that this will throw an error if the subscription already exists
-	err = client.AddSubscription("stream.online", "1", twitchwh.Condition{
+	id, err := client.AddSubscription("stream.online", "1", twitchwh.Condition{
 		BroadcasterUserID: "215185844",
 	})
 	if err != nil {
