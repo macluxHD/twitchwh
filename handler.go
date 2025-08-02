@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"slices"
 )
 
 // List of request headers sent from Twitch
@@ -60,12 +59,13 @@ func (c *Client) Handler(w http.ResponseWriter, r *http.Request) {
 		message_type := r.Header.Get(messageType)
 		if message_type == messageTypeNotification {
 			c.logger.Printf("Received event for %s ", payload.Subscription.Type)
-			if slices.Contains(c.handledEvents, r.Header.Get(twitchMessageID)) {
+			messageID := r.Header.Get(twitchMessageID)
+			if c.handledEventsChecker.IsHandled(messageID) {
 				c.logger.Println("Got request for handled event, ignoring...")
 				w.WriteHeader(204)
 				return
 			} else {
-				c.handledEvents = append(c.handledEvents, r.Header.Get(twitchMessageID))
+				c.handledEventsChecker.MarkHandled(messageID)
 			}
 
 			if handler, ok := c.handlers[payload.Subscription.Type]; ok {
