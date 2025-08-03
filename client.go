@@ -67,6 +67,7 @@ type Client struct {
 	webhookURL    string
 	debug         bool
 
+	webhookSecretMu      sync.RWMutex
 	logger               *log.Logger
 	httpClient           *http.Client
 	handledEventsChecker HandledEventsChecker
@@ -83,6 +84,18 @@ type Client struct {
 // For a list of event types, see [https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/].
 func (c *Client) On(event string, handler func(json.RawMessage)) {
 	c.handlers[event] = handler
+}
+
+func (c *Client) SetWebhookSecret(secret string) {
+	c.webhookSecretMu.Lock()
+	defer c.webhookSecretMu.Unlock()
+	c.webhookSecret = secret
+}
+
+func (c *Client) GetWebhookSecret() string {
+	c.webhookSecretMu.RLock()
+	defer c.webhookSecretMu.RUnlock()
+	return c.webhookSecret
 }
 
 // Creates a new client

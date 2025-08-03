@@ -118,7 +118,7 @@ func (c *Client) addSubscription(Type string, version string, condition Conditio
 		Transport: transport{
 			Method:   "webhook",
 			Callback: c.webhookURL,
-			Secret:   c.webhookSecret,
+			Secret:   c.GetWebhookSecret(),
 		},
 	})
 	if err != nil {

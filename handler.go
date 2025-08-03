@@ -44,7 +44,7 @@ func (c *Client) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hmacMessage := r.Header.Get(twitchMessageID) + r.Header.Get(twitchMessageTimestamp) + string(body)
-	expectedSignature := "sha256=" + generateHmac(c.webhookSecret, hmacMessage)
+	expectedSignature := "sha256=" + generateHmac(c.GetWebhookSecret(), hmacMessage)
 	if verifyHmac(expectedSignature, r.Header.Get(twitchMessageSignature)) {
 		c.logger.Println("Received valid signature")
 
