@@ -106,6 +106,14 @@ func (c *Client) AddSubscription(Type string, version string, condition Conditio
 			c.token = token
 			return c.addSubscription(Type, version, condition)
 		}
+
+		var usErr *UnhandledStatusError
+		if errors.As(err, &usErr) {
+			c.logger.Printf("Unhandled status code %d: %s", usErr.Status, string(usErr.Body))
+			return "", err
+		}
+
+		return "", err
 	}
 	return id, nil
 }
