@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"time"
 )
 
 func generateHmac(secret, message string) string {
@@ -15,4 +16,12 @@ func generateHmac(secret, message string) string {
 
 func verifyHmac(hmac1, hmac2 string) bool {
 	return hmac.Equal([]byte(hmac1), []byte(hmac2))
+}
+
+func isMessageTooOld(timestamp string) bool {
+	t, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		return false
+	}
+	return time.Since(t) > 10*time.Minute
 }

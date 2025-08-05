@@ -48,6 +48,11 @@ func (c *Client) Handler(w http.ResponseWriter, r *http.Request) {
 	if verifyHmac(expectedSignature, r.Header.Get(twitchMessageSignature)) {
 		c.logger.Println("Received valid signature")
 
+		if isMessageTooOld(r.Header.Get(twitchMessageTimestamp)) {
+			w.WriteHeader(204)
+			return
+		}
+
 		var payload webhookPayload
 		err := json.Unmarshal(body, &payload)
 		if err != nil {
