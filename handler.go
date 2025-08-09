@@ -85,7 +85,7 @@ func (c *Client) Handler(w http.ResponseWriter, r *http.Request) {
 		if message_type == messageTypeVerification {
 			c.logger.Printf("Got challenge request for %s", payload.Subscription.ID)
 			go func() {
-				c.verifiedSubscriptions <- payload.Subscription.ID
+				c.VerifiedSubscriptions <- payload.Subscription.ID
 			}()
 			w.WriteHeader(200)
 			w.Write([]byte(payload.Challenge))

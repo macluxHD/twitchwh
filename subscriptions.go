@@ -185,14 +185,14 @@ func (c *Client) addSubscription(Type string, version string, condition Conditio
 	// Await confirmation
 	for {
 		select {
-		case id := <-c.verifiedSubscriptions:
+		case id := <-c.VerifiedSubscriptions:
 			if id == subscription.ID {
 				c.logger.Printf("Subscription created: %s", subscription.ID)
 				return id, nil
 			} else {
 				// Verified subscription was not for this subscription
 				c.logger.Println("Subscription confirmation did not match ID, ignoring...")
-				c.verifiedSubscriptions <- id
+				c.VerifiedSubscriptions <- id
 				continue
 			}
 		case <-time.After(10 * time.Second):

@@ -72,7 +72,7 @@ type Client struct {
 	httpClient           *http.Client
 	handledEventsChecker HandledEventsChecker
 	// Client.Handler sends verified IDs to this channel to be read in Client.AddSubscription
-	verifiedSubscriptions chan string
+	VerifiedSubscriptions chan string
 
 	// Fired whenever a subscription is revoked.
 	// Check Subscription.Status for the reason.
@@ -114,7 +114,7 @@ func New(config ClientConfig) (*Client, error) {
 		debug:                 config.Debug,
 		httpClient:            &http.Client{},
 		handledEventsChecker:  handledEventsChecker,
-		verifiedSubscriptions: make(chan string),
+		VerifiedSubscriptions: make(chan string),
 		handlers:              make(map[string]func(json.RawMessage)),
 	}
 
